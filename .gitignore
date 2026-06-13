@@ -1,0 +1,30 @@
+# Environment & secrets
+backend/.env
+.env
+
+# Database & uploads (local data, not for version control)
+backend/resume_editor.db
+backend/uploads/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+
+# Claude Code local settings
+.claude/
