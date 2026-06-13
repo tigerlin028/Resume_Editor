@@ -28,3 +28,6 @@ frontend/out/
 
 # Claude Code local settings
 .claude/
+
+# Chinese README (local only)
+README.zh.md

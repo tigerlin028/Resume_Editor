@@ -1,215 +1,182 @@
-# Resume Editor — AI 简历优化工具
+# Resume Editor — AI Resume Optimizer
 
-本地 Web 应用：上传简历或调用已保存档案 + 粘贴 JD → Claude API 优化 → PDF 预览 / 前后对比 → 导出 PDF/Word。
+A local web app: upload your resume or load your saved profile + paste a job description → Claude API optimizes → PDF preview → export PDF/Word.
 
 ---
 
-## 启动方式
+## Quick Start
 
 ```bash
-# 后端（端口 8000）
+# Backend (port 8000)
 cd backend
 uvicorn main:app --reload --port 8000
 
-# 前端（端口 3000，另开终端）
+# Frontend (port 3000, separate terminal)
 cd frontend
 npm run dev
 ```
 
-访问 `http://localhost:3000`。  
-`backend/.env` 需包含：`ANTHROPIC_API_KEY=sk-ant-...`
+Open `http://localhost:3000`.  
+Create `backend/.env` with: `ANTHROPIC_API_KEY=sk-ant-...`
 
-**数据持久化**：所有历史记录、优化结果、个人档案均存储在 `backend/resume_editor.db`（SQLite）和 `backend/uploads/` 中，关闭进程后数据不丢失。
+**Data persistence**: all history, optimization results, and profile data are stored in `backend/resume_editor.db` (SQLite) and `backend/uploads/`. Closing the processes does not lose any data.
 
 ---
 
-## 技术栈
+## Tech Stack
 
-| 层 | 技术 |
+| Layer | Technology |
 |---|---|
-| 后端 | Python 3.11 · FastAPI · SQLAlchemy (async) · aiosqlite · SQLite |
-| AI | Anthropic Claude API (`claude-sonnet-4-6`) · Prompt Caching · SSE 流式输出 |
-| 简历解析 | pdfplumber (word-level y-grouping) · python-docx |
-| 导出 | reportlab (PDF, Times-Roman) · python-docx (DOCX) |
-| 前端 | Next.js 16 · React 19 · TypeScript · Tailwind CSS |
+| Backend | Python 3.11 · FastAPI · SQLAlchemy (async) · aiosqlite · SQLite |
+| AI | Anthropic Claude API (`claude-sonnet-4-6`) · Prompt Caching · SSE streaming |
+| Resume parsing | pdfplumber (word-level y-grouping) · python-docx |
+| Export | reportlab (PDF, Times New Roman) · python-docx (DOCX) |
+| Frontend | Next.js 16 · React 19 · TypeScript · Tailwind CSS |
 
 ---
 
-## 目录结构
+## Project Structure
 
 ```
 Resume_Editor/
 ├── backend/
-│   ├── main.py                     # FastAPI 入口，CORS，startup 建表
+│   ├── main.py                     # FastAPI entry, CORS, startup table creation
 │   ├── requirements.txt
-│   ├── .env                        # ANTHROPIC_API_KEY=...
-│   ├── resume_editor.db            # 运行时自动创建，持久化存储
+│   ├── .env                        # ANTHROPIC_API_KEY (not committed)
+│   ├── resume_editor.db            # Auto-created at runtime, persistent
 │   └── app/
 │       ├── config.py
 │       ├── database.py
 │       ├── models.py               # ORM: sessions / resumes / optimizations / exports / profile
 │       ├── schemas.py
 │       ├── api/routes/
-│       │   ├── resume.py           # POST /resumes/upload（上传后自动合并进档案）
+│       │   ├── resume.py           # POST /resumes/upload (auto-merges into profile after upload)
 │       │   ├── optimize.py         # POST /optimize  +  GET /optimize/stream/{sid}
 │       │   ├── history.py          # GET/DELETE /history
 │       │   ├── export.py           # POST /export/{id}/pdf|docx  +  GET /export/download/{id}
 │       │   └── profile.py          # GET/PUT /profile, POST /profile/add-text, POST /profile/start-session
 │       └── services/
-│           ├── resume_parser.py    # pdfplumber + python-docx 解析为纯文本
-│           ├── claude_service.py   # Prompt caching + 流式输出 + Profile 输入支持
-│           ├── diff_service.py     # 内容级行 diff（normalize 后比较，去除格式符干扰）
+│           ├── resume_parser.py    # pdfplumber + python-docx → plain text
+│           ├── claude_service.py   # Prompt caching + streaming + profile input support
+│           ├── diff_service.py     # Content-based line diff (normalizes formatting markers)
 │           ├── export_service.py   # reportlab PDF + python-docx DOCX
-│           └── profile_service.py  # Claude 合并简历进档案
+│           └── profile_service.py  # Claude-assisted resume merge into profile
 └── frontend/
     └── src/
         ├── app/
-        │   ├── page.tsx            # 主页：上传/档案 → JD → 优化 → 预览
-        │   ├── history/page.tsx    # 历史记录页（支持重新加载恢复完整状态）
-        │   └── profile/page.tsx    # 个人档案管理页
+        │   ├── page.tsx            # Main page: upload/profile → JD → optimize → preview
+        │   ├── history/page.tsx    # History page (supports full state restore)
+        │   └── profile/page.tsx    # Profile management page
         ├── components/
         │   ├── ResumeUploader.tsx
         │   ├── JDInput.tsx
         │   ├── InstructionBox.tsx
-        │   ├── ComparisonView.tsx  # PDF预览 / 对比改动 切换
-        │   ├── ResumePreview.tsx   # PDF 排版复现（Times New Roman，两栏布局）
+        │   ├── ComparisonView.tsx  # PDF preview / diff toggle
+        │   ├── ResumePreview.tsx   # PDF layout replica (Times New Roman, two-column)
         │   ├── DiffHighlight.tsx
         │   ├── ExportButtons.tsx
         │   └── HistoryList.tsx
         ├── hooks/
-        │   ├── useOptimize.ts      # SSE 流式接收 + loadResult（历史恢复）
+        │   ├── useOptimize.ts      # SSE streaming + loadResult (history restore)
         │   └── useHistory.ts
-        └── lib/api.ts              # 所有后端调用
+        └── lib/api.ts              # All backend API calls
 ```
 
 ---
 
-## 数据库 Schema
+## API Endpoints (prefix `/api/v1`)
 
-### sessions / resumes / optimizations / exports
-（同原始设计，不赘述）
-
-### profile（新）
-单行表，全局唯一，跨会话积累候选人的完整经历。
-
-| 字段 | 类型 | 说明 |
+| Method | Path | Description |
 |---|---|---|
-| id | INTEGER PK | 始终为 1 |
-| owner_name | VARCHAR | 从档案首行提取的姓名 |
-| structured_text | TEXT | 结构化 Markdown 档案全文 |
-| updated_at | DATETIME | 最后更新时间 |
+| POST | /resumes/upload | Upload PDF/DOCX, parse, async merge into profile |
+| POST | /optimize | Start optimization |
+| GET | /optimize/stream/{session_id} | SSE token stream |
+| GET | /optimize/{id} | Get full result |
+| GET | /history | Paginated history list |
+| GET | /history/{session_id} | Session detail with all versions |
+| DELETE | /history/{session_id} | Delete session |
+| POST | /export/{id}/pdf | Generate PDF |
+| POST | /export/{id}/docx | Generate DOCX |
+| GET | /export/download/{id} | Download file |
+| GET | /profile | Get current profile |
+| PUT | /profile | Replace profile content |
+| POST | /profile/add-text | Append text to MANUAL ADDITIONS |
+| POST | /profile/start-session | Create session from profile (no file upload needed) |
 
 ---
 
-## API 端点（前缀 `/api/v1`）
+## Key Design Notes
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | /resumes/upload | 上传 PDF/DOCX，解析，后台异步合并进 profile |
-| POST | /optimize | 触发优化 |
-| GET | /optimize/stream/{session_id} | SSE 流式推送 |
-| GET | /optimize/{id} | 获取完整结果 |
-| GET | /history | 分页列表 |
-| GET | /history/{session_id} | 详情（含所有版本） |
-| DELETE | /history/{session_id} | 删除 |
-| POST | /export/{id}/pdf | 生成 PDF |
-| POST | /export/{id}/docx | 生成 DOCX |
-| GET | /export/download/{id} | 下载文件 |
-| GET | /profile | 获取当前档案 |
-| PUT | /profile | 手动替换档案内容 |
-| POST | /profile/add-text | 追加文字到 MANUAL ADDITIONS |
-| POST | /profile/start-session | 用档案内容创建新 session（无需上传文件） |
+### Candidate Profile System
 
----
+**Purpose**: Accumulate all resume versions across sessions so Claude always picks the most relevant experience for the current JD.
 
-## 核心设计说明
-
-### 个人档案（Profile）系统
-
-**目的**：跨会话积累候选人所有简历版本，让 Claude 每次都从完整经历库里挑最适合当前 JD 的内容。
-
-**格式**（结构化 Markdown）：
+**Format** (structured Markdown):
 ```
-# CANDIDATE PROFILE: Xiaotian (Tiger) Lin
-Contact: ...
+# CANDIDATE PROFILE: First Last
+Contact: phone | email | url
 
 ## EDUCATION
-### University of Pennsylvania | Philadelphia, PA
-Degree: M.S.E. in Data Science, GPA: 3.73 | Expected May 2026
-Courses: NLP, Applied ML...
+### University Name | City, State
+Degree: ..., GPA: X.XX | timeline
+Courses: ...
 
 ## EXPERIENCE
-### Apple | Beijing, China | Jun 2024 – Aug 2024
+### Company | City, State | Start – End
 
 #### [Version — SDE / Data-Engineering]
-Role: Data Scientist Intern
-- ETL pipeline bullets...
+Role: Job Title
+- Achievement bullets...
 Tools: Python, SQL, Spark
 
 #### [Version — Analytics / Business]
-Role: Data Analyst Intern
-- Dashboard / metrics bullets...
+Role: Job Title
+- Different angle bullets...
 Tools: Tableau, Excel
 
 ## SKILLS POOL
-...
+Category: skill1, skill2, ...
 
 ## MANUAL ADDITIONS
-[用户直接输入的经历描述]
+[Free-text additions typed directly by user]
 ```
 
-**合并流程**：
-- 上传简历时，后台异步调用 Claude 将新简历合并进 profile（不阻塞上传响应，约 2-5 秒后完成）
-- 同一公司：内容差异 > 50% 则新增 Version；否则保留较好版本
-- Skills Pool 取所有版本并集
-- MANUAL ADDITIONS 原样保留
+**Merge flow**: on every resume upload, Claude merges the new resume into the existing profile as a background task (non-blocking). Same company with >50% different content → new Version; otherwise keep the better-written one. Skills Pool is the union of all versions. MANUAL ADDITIONS are always preserved as-is.
 
-**使用档案生成**：主页"使用已保存档案"按钮 → 调 `/profile/start-session` → 创建以 profile 内容为 `parsed_text` 的 session → 后续流程与上传文件完全一致。此模式下不显示"对比改动"标签（与自身档案对比没意义）。
+**Profile-based generation**: "Use Saved Profile" button on the main page calls `/profile/start-session`, which creates a session backed by the profile text. The rest of the optimization flow is identical to a normal upload. In this mode, the diff tab is hidden (comparing against a multi-version profile is not meaningful).
 
-### Claude 优化策略
+### Claude Optimization Strategy
 
-`claude_service.py` 的 System Prompt 采用两步走框架：
+The system prompt uses a two-step framework:
 
-1. **分析 JD**：提取 Top-3 技术技能、Top-3 日常职责、4-6 个高频关键词
-2. **重新映射**：
-   - 同一 section 内，最贴近 JD 的经历排最前（可打破时间顺序）
-   - 用 JD 的原话重写 bullet（不只缩短，要用 JD 的语言体系）
-   - Technical Skills 中 JD 相关技能优先排列
-   - 课程行：与 JD 相关则保留，完全无关且空间紧张才删
-   - Profile 输入时：读所有 Version，挑或混合最匹配的版本
+1. **Analyze the JD**: extract top-3 required technical skills, top-3 daily responsibility themes, and 4–6 repeated keywords/phrases.
+2. **Remap the resume**:
+   - Reorder experiences within a section to put the most JD-relevant role first (chronology can be broken)
+   - Rewrite bullets using the JD's exact vocabulary, not just shorten them
+   - Reorganize Technical Skills so JD-relevant skills appear first
+   - Keep coursework if any courses relate to the JD; remove only as a last resort
+   - For profile input: read all Versions per company, pick or blend the most JD-relevant one
 
-**Prompt Caching 断点**：System Prompt（每次）+ resume/profile 文本（同内容多次优化时命中）。
+**Prompt caching breakpoints**: system prompt (every call) + resume/profile text (cache hit when same content is reused across multiple optimizations).
 
-### PDF 导出（reportlab）
+### PDF Export (reportlab)
 
-`export_service.py` 关键设计：
-- `_parse_lines(text)`：生成器，`last_kind == 'name'` 后紧接的行无论含 `|` 与否都识别为 `contact`
-- `_fit_para(text, font, size, width)`：逐步缩小字号（0.5pt/步）直到单行可容纳，用于长学位/职位行
-- `_two_col(left, right, frac)`：reportlab Table 实现公司名/日期两栏，零内边距
-- 页边距：左右 0.65 inch，上下 0.48 inch，可用宽 ≈ 519 pt
-- 联系方式行（contact）下方**无**分割线；分割线只在 section 标题下方
+Key logic in `export_service.py`:
+- `_parse_lines(text)`: generator yielding `(kind, content)` tuples. Critical: when `last_kind == 'name'`, the very next non-blank line is always `contact` regardless of whether it contains `|` (prevents misclassifying the contact line as an entry row)
+- `_fit_para(text, font, size, width)`: shrinks font size in 0.5pt steps, measuring with `p.wrap()`, until text fits in one line — used for long degree/role lines
+- `_two_col(left, right, frac)`: reportlab `Table` for company/date two-column rows, zero padding
+- Margins: 0.65 inch left/right, 0.48 inch top/bottom, usable width ≈ 519 pt
+- No horizontal rule after the contact line; HR only under section headers
 
-### 网页 PDF 预览（ResumePreview）
+### Browser PDF Preview (ResumePreview)
 
-`ResumePreview.tsx` 用内联 CSS 完整复现 PDF 排版：
+`ResumePreview.tsx` replicates the PDF layout with inline CSS:
 - `font-family: "Times New Roman", Times, serif`
-- 与 `_parse_lines` 完全对应的 TypeScript 解析器
-- 两栏行用 `flex justify-between`，公司名粗体，日期右对齐
-- 职位行斜体，bullet 用 `•` + 左缩进
-- 显示在灰色背景衬纸（`max-width: 680px`，居中，带阴影）
+- TypeScript parser mirroring `_parse_lines` exactly
+- Two-column rows via `flex justify-between` (bold company left, date right)
+- Italic role line, `•` bullet with left indent
+- Displayed on a gray background as a centered paper card (`max-width: 680px`, box shadow)
 
-### Diff 内容比较
+### Content-Based Diff
 
-`diff_service.py` 的 `_normalize(line)` 在比较前剥离：`##` / `#`、`- ` / `●` / `•` 等 bullet 符、`**bold**`、`|`。
-
-效果：原始简历用 `●` 而优化版用 `-`，相同内容不再被标为"改动"；只有实际文字内容变化才会标红/绿。
-
----
-
-## 主要页面
-
-| 路径 | 说明 |
-|---|---|
-| `/` | 主页：上传或选档案 → 粘贴 JD → 优化 → PDF 预览 → 导出 |
-| `/history` | 历史记录，点"重新加载"完整恢复对比视图 |
-| `/profile` | 档案管理：查看结构化档案、编辑、文字补充 |
+`diff_service.py` normalizes lines before comparison — strips `##`/`#`, `- `/`●`/`•` bullet markers, `**bold**`, and `|` — then runs `SequenceMatcher` on the cleaned text but stores original lines in the output. Result: lines that differ only in formatting markers (e.g. `●` vs `-`) are shown as equal; only genuine content changes are highlighted red/green.
