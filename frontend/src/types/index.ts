@@ -10,6 +10,7 @@ export interface OptimizeRequest {
   session_id: number;
   resume_id: number;
   jd_text: string;
+  company_name?: string;
   instructions?: string;
   parent_id?: number;
 }

@@ -139,7 +139,7 @@ export default function ResumePreview({ text }: { text: string }) {
   });
 
   return (
-    <div style={{ fontFamily: FONT, background: 'white', padding: '38px 44px', width: '100%', boxSizing: 'border-box' }}>
+    <div style={{ fontFamily: FONT, background: 'white', padding: '33px 52px', width: '100%', boxSizing: 'border-box' }}>
       {els}
     </div>
   );

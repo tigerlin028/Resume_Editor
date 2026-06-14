@@ -9,6 +9,22 @@ from sqlalchemy import select
 from app.config import settings
 from app.models import Profile
 
+INSTRUCTION_SYNC_PROMPT = """Decide whether this resume adjustment instruction contains new personal information worth saving to a candidate profile.
+
+Personal information worth saving: new courses taken, new skills learned, certifications earned, new job/project experience, updated metrics or dates, contact info changes.
+NOT worth saving: formatting requests, style changes, tone adjustments, requests to emphasize or reorder existing content, length changes.
+
+If the instruction DOES contain new personal information:
+- Extract only the new facts as a short structured snippet using this format:
+  Courses: <course1>, <course2>          ← only if new courses mentioned
+  Skills: <skill1>, <skill2>             ← only if new skills mentioned
+  Note: <free-form fact>                 ← for anything else (experience, cert, etc.)
+- Output only that snippet, nothing else.
+
+If the instruction does NOT contain new personal information, output exactly:
+NO_UPDATE"""
+
+
 MERGE_PROMPT = """You maintain a structured candidate profile. Given an existing profile and a new resume, output the complete updated profile.
 
 OUTPUT FORMAT (follow exactly):
@@ -84,6 +100,58 @@ async def merge_resume_into_profile(db: AsyncSession, resume_text: str) -> Profi
     await db.commit()
     await db.refresh(profile)
     return profile
+
+
+async def sync_instruction_to_profile(db: AsyncSession, instruction: str) -> bool:
+    """
+    Silently check if an adjustment instruction contains new personal info.
+    If so, merge it into the profile. Returns True if profile was updated.
+    """
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+
+    # Step 1: Haiku detects + extracts personal info from instruction
+    detection = await asyncio.to_thread(
+        lambda: client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=256,
+            system=INSTRUCTION_SYNC_PROMPT,
+            messages=[{"role": "user", "content": instruction}],
+        ).content[0].text.strip()
+    )
+
+    if detection == "NO_UPDATE" or not detection:
+        return False
+
+    # Step 2: Merge the extracted snippet into the profile
+    profile = await get_or_create_profile(db)
+
+    if not profile.structured_text.strip():
+        # No profile yet — just save to MANUAL ADDITIONS, not enough info for full profile
+        profile.structured_text = f"## MANUAL ADDITIONS\n{detection.strip()}\n"
+    else:
+        def _merge_snippet(existing: str, snippet: str) -> str:
+            client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+            user_msg = (
+                f"EXISTING PROFILE:\n{existing}\n\n"
+                f"NEW FACTS TO ADD (a short snippet, not a full resume — "
+                f"integrate these facts into the appropriate sections):\n{snippet}"
+            )
+            msg = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=4096,
+                system=MERGE_PROMPT,
+                messages=[{"role": "user", "content": user_msg}],
+            )
+            return msg.content[0].text.strip()
+
+        merged = await asyncio.to_thread(_merge_snippet, profile.structured_text, detection)
+        profile.structured_text = merged
+        first_line = merged.split('\n')[0]
+        if 'PROFILE:' in first_line:
+            profile.owner_name = first_line.split('PROFILE:', 1)[-1].strip()
+
+    await db.commit()
+    return True
 
 
 async def append_manual_text(db: AsyncSession, text: str) -> Profile:

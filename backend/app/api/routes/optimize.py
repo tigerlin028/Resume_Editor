@@ -8,8 +8,10 @@ from sqlalchemy import select
 from app.database import get_db
 from app.models import Session, Resume, Optimization
 from app.schemas import OptimizeRequest, OptimizeStartResponse, OptimizationResult
-from app.services.claude_service import stream_optimization
+from app.services.claude_service import stream_optimization, extract_company_name
 from app.services.diff_service import compute_diff
+from app.services.profile_service import sync_instruction_to_profile
+from app.database import AsyncSessionLocal
 
 router = APIRouter()
 
@@ -31,10 +33,10 @@ async def start_optimization(
     if not session:
         raise HTTPException(status_code=404, detail="会话不存在")
 
-    # Update session title if JD provided
+    # Extract company name from JD, use as session title
     if req.jd_text:
-        jd_snippet = req.jd_text[:30].replace("\n", " ")
-        session.title = f"{jd_snippet}… - {resume.original_filename}"
+        company = await extract_company_name(req.jd_text)
+        session.title = company if company != "Unknown" else req.jd_text[:30].replace("\n", " ") + "…"
         session.status = "processing"
 
     # Create optimization row
@@ -57,7 +59,19 @@ async def start_optimization(
         _run_optimization(opt.id, resume.parsed_text, req.jd_text, req.instructions, queue)
     )
 
+    # Silently sync any new personal info from instructions into the profile
+    if req.instructions and req.instructions.strip():
+        asyncio.create_task(_sync_instruction_background(req.instructions))
+
     return OptimizeStartResponse(optimization_id=opt.id, session_id=req.session_id)
+
+
+async def _sync_instruction_background(instruction: str):
+    async with AsyncSessionLocal() as db:
+        try:
+            await sync_instruction_to_profile(db, instruction)
+        except Exception:
+            pass  # silent — never fail the main flow
 
 
 async def _run_optimization(

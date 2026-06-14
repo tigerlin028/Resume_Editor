@@ -1,3 +1,4 @@
+import re
 import uuid
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, Depends
@@ -5,10 +6,22 @@ from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import Optimization, Export
+from app.models import Optimization, Export, Session
 from app.schemas import ExportResponse
 from app.services.export_service import export_to_docx, export_to_pdf
 from app.config import settings
+
+
+def _build_filename(opt: Optimization, session: Session, ext: str) -> str:
+    """Construct '公司名_Resume_候选人名.ext' from session title and optimized text."""
+    company = re.sub(r'[^\w\s\-]', '', session.title or '').strip().replace(' ', '_') or 'Company'
+    candidate = 'Resume'
+    if opt.optimized_text:
+        first_line = opt.optimized_text.splitlines()[0]
+        name = re.sub(r'^#+\s*', '', first_line).strip()
+        if name:
+            candidate = re.sub(r'[^\w\s\-]', '', name).strip().replace(' ', '_')
+    return f"{company}_Resume_{candidate}.{ext}"
 
 router = APIRouter()
 
@@ -67,13 +80,17 @@ async def download_export(export_id: int, db: AsyncSession = Depends(get_db)):
     if not export or not Path(export.file_path).exists():
         raise HTTPException(status_code=404, detail="文件不存在")
 
+    opt = await db.get(Optimization, export.optimization_id)
+    session = await db.get(Session, opt.session_id) if opt else None
+
     media_types = {
         "pdf": "application/pdf",
         "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     }
-    suffix = "pdf" if export.format == "pdf" else "docx"
+    ext = "pdf" if export.format == "pdf" else "docx"
+    filename = _build_filename(opt, session, ext) if opt and session else f"Resume.{ext}"
     return FileResponse(
         path=export.file_path,
         media_type=media_types.get(export.format, "application/octet-stream"),
-        filename=f"optimized_resume.{suffix}",
+        filename=filename,
     )

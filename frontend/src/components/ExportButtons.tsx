@@ -20,7 +20,6 @@ export default function ExportButtons({ optimizationId }: Props) {
       const url = getDownloadUrl(res.download_url);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `optimized_resume.${type}`;
       a.click();
     } catch {
       setError('导出失败，请重试');
