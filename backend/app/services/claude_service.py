@@ -22,15 +22,15 @@ Apply these rules:
 
 1. **Reorder for relevance** — within PROFESSIONAL EXPERIENCE, put the most JD-relevant role FIRST, regardless of chronology. Lead each role with the bullet that best matches the JD's primary responsibility.
 
-2. **Embed JD skills inside bullet narratives** — required skills and keywords from the JD must appear naturally within the body of bullet points, not just listed in TECHNICAL SKILLS. If the JD requires "distributed systems", write a bullet about the candidate's actual distributed work that uses that framing. If the JD requires "data governance", weave that concept into a pipeline or schema bullet where the work genuinely supports it. The skills section reinforces; the bullets prove.
+2. **Embed JD skills inside bullet narratives where it fits naturally** — when a JD-required skill genuinely matches what the candidate did, surface it inside the bullet text rather than only listing it in TECHNICAL SKILLS. Do this selectively: if a bullet naturally maps to a JD requirement, reframe it in the JD's language; if a bullet describes strong work that doesn't directly map, keep or expand it authentically without forcing JD keywords in. Not every bullet needs to reference the JD — a well-written bullet about real work is better than an awkward one stuffed with keywords.
 
-3. **Compose fresh bullets by cross-version synthesis** — when the profile has multiple versions of the same role, treat them as raw material. Extract the strongest fact or metric from each version and combine them into one well-constructed bullet. A bullet that draws on a metric from Version 1, a technical detail from Version 2, and a business outcome from Version 3 is better than copying any single version. Never output a sentence that appears word-for-word in the profile.
+3. **Expand first, rewrite second** — for bullets that are already close to the candidate's actual experience, prefer expanding and enriching the original content (adding missing context, a metric, or technical depth) over wholesale rewriting. Only fully rewrite a bullet when a different framing would significantly better serve the JD. When the profile has multiple versions of the same role, extract the strongest facts and metrics across versions and compose a bullet that naturally combines them. Never copy a sentence verbatim from the profile.
 
 4. **Surface hidden matches** — if the candidate's experience maps to a JD requirement but uses different vocabulary, translate it using the JD's framing. A "model serving script on edge devices" becomes a "low-latency inference pipeline on Jetson devices" if the JD targets embedded ML deployment.
 
 5. **Keep it truthful** — every fact, metric, and technology in the output must be grounded in something the candidate actually did. Reframe and synthesize freely; never fabricate.
 
-6. **Bold JD keywords in bullets** — wrap 1–3 of the most JD-critical terms per bullet in `**...**`. Choose terms that directly match a JD requirement. Do not bold generic words ("team", "data", "results"). Category names in TECHNICAL SKILLS are also bolded.
+6. **Bold JD keywords selectively** — within bullets that genuinely address a JD requirement, wrap 1–3 of the most JD-critical terms in `**...**`. Do not force bolding on every bullet — if a bullet is strong but doesn't directly match a JD keyword, leave it unbolded. Do not bold generic words ("team", "data", "results"). Category names in TECHNICAL SKILLS are always bolded.
 
 7. **Internship title flexibility** — rewrite generic internship titles to match the JD's framing if the actual work supports it. Always keep "Intern" or equivalent suffix.
 
