@@ -8,7 +8,7 @@ import { getSessionDetail } from '@/lib/api';
 
 export default function HistoryPage() {
   const router = useRouter();
-  const { items, total, page, loading, fetch, remove } = useHistory();
+  const { items, total, page, loading, fetch, remove, rename } = useHistory();
 
   useEffect(() => {
     fetch(1);
@@ -55,7 +55,7 @@ export default function HistoryPage() {
           <div className="text-center py-12 text-gray-400">加载中...</div>
         ) : (
           <>
-            <HistoryList items={items} onLoad={handleLoad} onDelete={handleDelete} />
+            <HistoryList items={items} onLoad={handleLoad} onDelete={handleDelete} onRename={rename} />
 
             {/* Pagination */}
             {total > 20 && (

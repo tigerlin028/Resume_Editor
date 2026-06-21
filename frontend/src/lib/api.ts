@@ -51,6 +51,10 @@ export async function deleteSession(sessionId: number): Promise<void> {
   await api.delete(`/history/${sessionId}`);
 }
 
+export async function renameSession(sessionId: number, title: string): Promise<void> {
+  await api.patch(`/history/${sessionId}/title`, { title });
+}
+
 export async function exportPdf(optimizationId: number): Promise<ExportResponse> {
   const { data } = await api.post<ExportResponse>(`/export/${optimizationId}/pdf`);
   return data;
@@ -63,6 +67,18 @@ export async function exportDocx(optimizationId: number): Promise<ExportResponse
 
 export function getDownloadUrl(downloadPath: string): string {
   return `${process.env.NEXT_PUBLIC_API_URL}${downloadPath}`;
+}
+
+export async function exportCustom(text: string, fmt: 'pdf' | 'docx'): Promise<void> {
+  const response = await api.post(`/export/custom/${fmt}`, { text }, { responseType: 'blob' });
+  const url = URL.createObjectURL(new Blob([response.data]));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Resume_edited.${fmt}`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 export async function getProfile(): Promise<Profile> {

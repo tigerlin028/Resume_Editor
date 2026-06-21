@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback, useState, useEffect } from 'react';
 import DiffHighlight from './DiffHighlight';
 import ResumePreview from './ResumePreview';
 import type { DiffOp } from '@/types';
@@ -10,6 +10,7 @@ interface Props {
   diffOps: DiffOp[] | null;
   streaming?: boolean;
   hideDiff?: boolean;
+  onTextChange?: (text: string) => void;
 }
 
 // Simple plain-text render for the original panel in diff mode
@@ -21,11 +22,23 @@ function PlainText({ text }: { text: string }) {
   );
 }
 
-export default function ComparisonView({ originalText, optimizedText, diffOps, streaming, hideDiff }: Props) {
+export default function ComparisonView({ originalText, optimizedText, diffOps, streaming, hideDiff, onTextChange }: Props) {
   const [mode, setMode] = useState<'preview' | 'diff'>('preview');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedText, setEditedText] = useState(optimizedText);
   const leftRef = useRef<HTMLDivElement>(null);
   const rightRef = useRef<HTMLDivElement>(null);
   const syncing = useRef(false);
+
+  useEffect(() => {
+    setEditedText(optimizedText);
+    setIsEditing(false);
+  }, [optimizedText]);
+
+  const handleEdit = (val: string) => {
+    setEditedText(val);
+    onTextChange?.(val);
+  };
 
   const onLeftScroll = useCallback(() => {
     if (syncing.current) return;
@@ -50,6 +63,7 @@ export default function ComparisonView({ originalText, optimizedText, diffOps, s
   }, []);
 
   const canDiff = !!diffOps && !streaming && !hideDiff;
+  const hasEdits = editedText !== optimizedText;
 
   return (
     <div className="flex flex-col h-full">
@@ -57,7 +71,7 @@ export default function ComparisonView({ originalText, optimizedText, diffOps, s
       <div className="flex items-center justify-between mb-2 shrink-0">
         <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
           <button
-            onClick={() => setMode('preview')}
+            onClick={() => { setMode('preview'); setIsEditing(false); }}
             className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
               mode === 'preview' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'
             }`}
@@ -66,7 +80,7 @@ export default function ComparisonView({ originalText, optimizedText, diffOps, s
           </button>
           {!hideDiff && (
             <button
-              onClick={() => setMode('diff')}
+              onClick={() => { setMode('diff'); setIsEditing(false); }}
               disabled={!canDiff}
               className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
                 mode === 'diff' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'
@@ -89,11 +103,52 @@ export default function ComparisonView({ originalText, optimizedText, diffOps, s
               <span className="text-red-500">■</span> 删除
             </span>
           )}
+          {mode === 'preview' && !streaming && (
+            <button
+              onClick={() => setIsEditing(v => !v)}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors border ${
+                isEditing
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              {isEditing ? (
+                <>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  完成编辑
+                </>
+              ) : (
+                <>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z" />
+                  </svg>
+                  {hasEdits ? '继续编辑' : '编辑'}
+                </>
+              )}
+            </button>
+          )}
+          {hasEdits && !isEditing && mode === 'preview' && (
+            <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">已手动编辑</span>
+          )}
         </div>
       </div>
 
       {/* Content */}
       {mode === 'preview' ? (
+        isEditing ? (
+          /* Edit mode — raw markdown textarea */
+          <div className="flex-1 min-h-0 bg-gray-200 rounded-lg p-4">
+            <textarea
+              value={editedText}
+              onChange={e => handleEdit(e.target.value)}
+              className="w-full h-full resize-none rounded border border-gray-300 p-4 text-xs leading-relaxed font-mono text-gray-800 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+              spellCheck={false}
+            />
+          </div>
+        ) : (
         /* PDF preview — single scrollable panel, page-like */
         <div className="flex-1 min-h-0 overflow-y-auto bg-gray-200 rounded-lg">
           <div className="py-6 px-4 flex justify-center">
@@ -105,11 +160,12 @@ export default function ComparisonView({ originalText, optimizedText, diffOps, s
                   </pre>
                 </div>
               ) : (
-                <ResumePreview text={optimizedText} />
+                <ResumePreview text={editedText} />
               )}
             </div>
           </div>
         </div>
+        )
       ) : (
         /* Diff mode — two panels */
         <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">

@@ -95,3 +95,11 @@ class ProfileUpdateRequest(BaseModel):
 
 class ProfileAddTextRequest(BaseModel):
     text: str
+
+
+class SessionRenameRequest(BaseModel):
+    title: str
+
+
+class CustomExportRequest(BaseModel):
+    text: str

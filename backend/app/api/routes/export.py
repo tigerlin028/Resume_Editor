@@ -1,29 +1,56 @@
+import os
 import re
 import uuid
 from pathlib import Path
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Depends
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import Optimization, Export, Session
-from app.schemas import ExportResponse
+from app.schemas import ExportResponse, CustomExportRequest
 from app.services.export_service import export_to_docx, export_to_pdf
 from app.config import settings
 
 
 def _build_filename(opt: Optimization, session: Session, ext: str) -> str:
-    """Construct '公司名_Resume_候选人名.ext' from session title and optimized text."""
-    company = re.sub(r'[^\w\s\-]', '', session.title or '').strip().replace(' ', '_') or 'Company'
-    candidate = 'Resume'
-    if opt.optimized_text:
-        first_line = opt.optimized_text.splitlines()[0]
-        name = re.sub(r'^#+\s*', '', first_line).strip()
-        if name:
-            candidate = re.sub(r'[^\w\s\-]', '', name).strip().replace(' ', '_')
-    return f"{company}_Resume_{candidate}.{ext}"
+    company = re.sub(r'[^\w\s\-]', '', session.title or '').strip().replace(' ', '_') or 'Resume'
+    return f"{company}.{ext}"
 
 router = APIRouter()
+
+_MEDIA = {
+    "pdf": "application/pdf",
+    "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
+
+
+def _rm(path: str) -> None:
+    try:
+        os.unlink(path)
+    except OSError:
+        pass
+
+
+@router.post("/custom/{fmt}")
+async def export_custom(fmt: str, body: CustomExportRequest, background_tasks: BackgroundTasks):
+    if fmt not in ("pdf", "docx"):
+        raise HTTPException(status_code=400, detail="fmt must be pdf or docx")
+
+    export_dir = Path(settings.upload_dir) / "exports"
+    export_dir.mkdir(parents=True, exist_ok=True)
+
+    tmp_path = str(export_dir / f"{uuid.uuid4().hex}.{fmt}")
+    try:
+        if fmt == "pdf":
+            export_to_pdf(body.text, tmp_path)
+        else:
+            export_to_docx(body.text, tmp_path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"导出失败：{e}")
+
+    background_tasks.add_task(_rm, tmp_path)
+    return FileResponse(path=tmp_path, media_type=_MEDIA[fmt], filename=f"Resume_edited.{fmt}")
 
 
 async def _generate_export(

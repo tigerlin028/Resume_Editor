@@ -1,6 +1,6 @@
 'use client';
 import { useState, useCallback } from 'react';
-import { listHistory, deleteSession } from '@/lib/api';
+import { listHistory, deleteSession, renameSession } from '@/lib/api';
 import type { SessionSummary } from '@/types';
 
 export function useHistory() {
@@ -27,5 +27,10 @@ export function useHistory() {
     setTotal(prev => prev - 1);
   }, []);
 
-  return { items, total, page, loading, fetch, remove };
+  const rename = useCallback(async (sessionId: number, title: string) => {
+    await renameSession(sessionId, title);
+    setItems(prev => prev.map(i => i.id === sessionId ? { ...i, title } : i));
+  }, []);
+
+  return { items, total, page, loading, fetch, remove, rename };
 }

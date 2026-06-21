@@ -1,12 +1,13 @@
 'use client';
 import { useState } from 'react';
-import { exportPdf, exportDocx, getDownloadUrl } from '@/lib/api';
+import { exportPdf, exportDocx, exportCustom, getDownloadUrl } from '@/lib/api';
 
 interface Props {
   optimizationId: number;
+  customText?: string;
 }
 
-export default function ExportButtons({ optimizationId }: Props) {
+export default function ExportButtons({ optimizationId, customText }: Props) {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [docxLoading, setDocxLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -16,11 +17,15 @@ export default function ExportButtons({ optimizationId }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const res = type === 'pdf' ? await exportPdf(optimizationId) : await exportDocx(optimizationId);
-      const url = getDownloadUrl(res.download_url);
-      const a = document.createElement('a');
-      a.href = url;
-      a.click();
+      if (customText) {
+        await exportCustom(customText, type);
+      } else {
+        const res = type === 'pdf' ? await exportPdf(optimizationId) : await exportDocx(optimizationId);
+        const url = getDownloadUrl(res.download_url);
+        const a = document.createElement('a');
+        a.href = url;
+        a.click();
+      }
     } catch {
       setError('导出失败，请重试');
     } finally {

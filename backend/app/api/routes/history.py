@@ -4,7 +4,7 @@ from sqlalchemy import select, func, delete
 
 from app.database import get_db
 from app.models import Session, Resume, Optimization, Export
-from app.schemas import HistoryListResponse, SessionSummary, SessionDetail, OptimizationResult
+from app.schemas import HistoryListResponse, SessionSummary, SessionDetail, OptimizationResult, SessionRenameRequest
 
 router = APIRouter()
 
@@ -72,6 +72,17 @@ async def get_session_detail(session_id: int, db: AsyncSession = Depends(get_db)
         parsed_text=resume.parsed_text,
         optimizations=[OptimizationResult.model_validate(o) for o in optimizations],
     )
+
+
+@router.patch("/{session_id}/title")
+async def rename_session(session_id: int, body: SessionRenameRequest, db: AsyncSession = Depends(get_db)):
+    session = await db.get(Session, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="会话不存在")
+
+    session.title = body.title.strip()
+    await db.commit()
+    return {"success": True}
 
 
 @router.delete("/{session_id}")

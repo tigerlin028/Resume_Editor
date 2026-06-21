@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import ResumeUploader from '@/components/ResumeUploader';
 import JDInput from '@/components/JDInput';
@@ -183,6 +183,13 @@ function ResultPage({
   hideDiff: boolean;
 }) {
   const [adjustOpen, setAdjustOpen] = useState(false);
+  const [editedText, setEditedText] = useState<string | null>(null);
+
+  useEffect(() => { setEditedText(null); }, [optimizedText]);
+
+  const handleTextChange = useCallback((text: string) => {
+    setEditedText(text === optimizedText ? null : text);
+  }, [optimizedText]);
 
   return (
     <>
@@ -193,12 +200,13 @@ function ResultPage({
           diffOps={diffOps}
           streaming={streaming}
           hideDiff={hideDiff}
+          onTextChange={handleTextChange}
         />
       </div>
 
       <div className="shrink-0 border-t border-gray-200 bg-white px-6 py-3 space-y-3">
         <div className="flex items-center gap-4 flex-wrap">
-          {result && <ExportButtons optimizationId={result.id} />}
+          {result && <ExportButtons optimizationId={result.id} customText={editedText ?? undefined} />}
           {result && (
             <span className="text-xs text-gray-400 ml-auto">
               {result.input_tokens} 输入 / {result.output_tokens} 输出 tokens
