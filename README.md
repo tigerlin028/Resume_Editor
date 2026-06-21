@@ -161,14 +161,19 @@ Category: skill1, skill2, ...
 
 The system prompt uses a silent two-step framework:
 
-1. **Internal analysis (never output)**: silently identify top-3 required technical skills, top-3 responsibility themes, and 4–6 repeated JD keywords.
-2. **Remap the resume**:
-   - Reorder experiences within a section to put the most JD-relevant role first (chronology can be broken)
-   - Rewrite bullets using the JD's exact vocabulary, not just shorten them
-   - Bold 1–3 JD-critical keywords per bullet using `**...**`
-   - Internship titles are flexible — rewrite to match the JD's framing if the actual work supports it
-   - Reorganize Technical Skills so JD-relevant skills appear first (max 4 categories, 5–7 items each)
-   - For profile input: read all Versions per company, pick or blend the most JD-relevant one; write the company header exactly once even if multiple roles/versions exist
+1. **Internal analysis (never output)**: silently map the JD's top-3 required skills, top-3 responsibility themes, and 4–6 repeated keywords — then identify which of the candidate's experiences (across all versions and companies) provides the strongest evidence for each.
+
+2. **Synthesize and rewrite**:
+   - **Profile as fact database**: the profile is raw material, not a copy source. Extract facts (technologies, metrics, scale, responsibilities) from all versions, then compose fresh bullet sentences — no verbatim copying from the profile.
+   - **Cross-version synthesis**: a single output bullet may draw a metric from Version 1, a technical detail from Version 2, and a business outcome from Version 3 of the same role. The strongest bullet combines evidence across versions.
+   - **Embed JD skills in bullets where natural**: required skills surface inside bullet narratives where the work genuinely supports it — not forced into every line, and not only listed in the skills section.
+   - **Enrich first, rewrite second**: bullets already close to the original are sharpened (more specific metric, more precise technical term) rather than wholesale-rewritten. Enrichment means more precise, not longer — every bullet stays ≤ 1.5 lines.
+   - **Bold JD keywords selectively**: wrap 1–3 JD-critical terms in `**...**` only in bullets that genuinely address a JD requirement. Do not bold generic words or force bolding on every line.
+   - Reorder experiences so the most JD-relevant role appears first (chronology can be broken).
+   - Internship titles are flexible — rewrite to match the JD's framing if the actual work supports it.
+   - Exactly **3 skill categories**, each with 6–8+ items; merge smaller categories rather than creating short lines.
+   - Every entry (job, research, or project) has **2–3 bullets**, never 1. Hard page limit: one page — cut least-relevant entries or reduce to 2 bullets on weaker roles before anything else.
+   - Company header written exactly once even when multiple roles or versions exist.
 
 **Prompt caching breakpoints**: system prompt (every call) + resume/profile text (cache hit when same content is reused across multiple optimizations).
 
