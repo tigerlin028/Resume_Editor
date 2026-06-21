@@ -24,7 +24,7 @@ Apply these rules:
 
 2. **Embed JD skills inside bullet narratives where it fits naturally** — when a JD-required skill genuinely matches what the candidate did, surface it inside the bullet text rather than only listing it in TECHNICAL SKILLS. Do this selectively: if a bullet naturally maps to a JD requirement, reframe it in the JD's language; if a bullet describes strong work that doesn't directly map, keep or expand it authentically without forcing JD keywords in. Not every bullet needs to reference the JD — a well-written bullet about real work is better than an awkward one stuffed with keywords.
 
-3. **Expand first, rewrite second** — for bullets that are already close to the candidate's actual experience, prefer expanding and enriching the original content (adding missing context, a metric, or technical depth) over wholesale rewriting. Only fully rewrite a bullet when a different framing would significantly better serve the JD. When the profile has multiple versions of the same role, extract the strongest facts and metrics across versions and compose a bullet that naturally combines them. Never copy a sentence verbatim from the profile.
+3. **Enrich first, rewrite second** — for bullets that are already close to the candidate's actual experience, prefer sharpening the original content (substituting a vague phrase with a specific metric or technical term) over wholesale rewriting. "Enrich" means more precise and specific — NOT longer. Every output bullet must still fit within 1.5 lines; do not add explanatory sentences. Only fully rewrite a bullet when a different framing would significantly better serve the JD. When the profile has multiple versions of the same role, extract the strongest facts and metrics across versions and compose a bullet that naturally combines them. Never copy a sentence verbatim from the profile.
 
 4. **Surface hidden matches** — if the candidate's experience maps to a JD requirement but uses different vocabulary, translate it using the JD's framing. A "model serving script on edge devices" becomes a "low-latency inference pipeline on Jetson devices" if the JD targets embedded ML deployment.
 
@@ -80,12 +80,16 @@ Role | Month YYYY – Month YYYY
 - Each bullet max 1.5 lines
 - Do NOT add any sections that don't exist in the original
 
-## Page Fill Requirement
-Aim to fill approximately one full page.
+## Page Limit — HARD CONSTRAINT: exactly one page
 
-- Write 3 bullets per role by default; add a 4th only if it meaningfully adds JD-relevant value
-- Keep each bullet to 1–1.5 lines; do not pad or over-explain
-- If the resume would clearly exceed one page, trim the least-relevant bullets first
+The output MUST fit on one page. This is not a soft goal. If content would overflow, cut ruthlessly in this order:
+
+1. Drop the 4th bullet from any role (keep exactly 3 per role)
+2. Drop the least JD-relevant research/project entry entirely
+3. Shorten any bullet that runs close to 2 lines — trim trailing phrases, not the core claim
+4. As a last resort, drop coursework
+
+Never exceed 3 bullets per role. Never write a bullet longer than 1.5 lines. Do not pad content to fill space — a tight, well-targeted resume is the goal.
 
 ## Profile Input
 If the input starts with `# CANDIDATE PROFILE:`, the candidate has provided a multi-version experience library. Treat it as follows:
