@@ -75,8 +75,8 @@ Role | Month YYYY – Month YYYY
 ## Format Rules (CRITICAL)
 - `## SECTION` headers: use the same sections as the original resume, in the same order
 - Entry headers: always `**Company/School** | Location` on one line, then `Role | Date range` on the next line. If the candidate held **multiple roles at the same company**, write the company header EXACTLY ONCE, then list each role on its own `Role | Date range` line, then the bullets. NEVER repeat the company name as a second header.
-- **TECHNICAL SKILLS**: reorganize categories so the most JD-relevant skills appear first. Write each category as `**Category**: skill1, skill2, ...` — bold the category name, NO bullet points, NO dashes after the colon. Hard rules: (1) at most 4 categories total; (2) each category MUST have at least 5–7 items — merge shorter categories into the nearest related one; (3) aim for every line to span at least 75% of the page width.
-- Bullets: use `-` only for job/research accomplishments, max 3–4 per role
+- **TECHNICAL SKILLS**: reorganize categories so the most JD-relevant skills appear first. Write each category as `**Category**: skill1, skill2, ...` — bold the category name, NO bullet points, NO dashes after the colon. Hard rules: (1) exactly 3 categories total — no more, no fewer; (2) each category MUST have at least 6–8 items — merge all shorter categories into the nearest related one; (3) aim for every line to span at least 75% of the page width.
+- Bullets: use `-` only for job/research accomplishments. Every entry (job role, research role, or project) must have exactly 2–3 bullets — never 1, never 4+.
 - Each bullet max 1.5 lines
 - Do NOT add any sections that don't exist in the original
 
@@ -84,12 +84,12 @@ Role | Month YYYY – Month YYYY
 
 The output MUST fit on one page. This is not a soft goal. If content would overflow, cut ruthlessly in this order:
 
-1. Drop the 4th bullet from any role (keep exactly 3 per role)
+1. Cut to 2 bullets for the least JD-relevant roles (minimum is 2, never 1)
 2. Drop the least JD-relevant research/project entry entirely
 3. Shorten any bullet that runs close to 2 lines — trim trailing phrases, not the core claim
 4. As a last resort, drop coursework
 
-Never exceed 3 bullets per role. Never write a bullet longer than 1.5 lines. Do not pad content to fill space — a tight, well-targeted resume is the goal.
+Every entry must have 2–3 bullets. Never write a bullet longer than 1.5 lines. Do not pad content to fill space — a tight, well-targeted resume is the goal.
 
 ## Profile Input
 If the input starts with `# CANDIDATE PROFILE:`, the candidate has provided a multi-version experience library. Treat it as follows:
